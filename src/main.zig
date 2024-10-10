@@ -1,13 +1,11 @@
 const std = @import("std");
-
 //TODO:
-//  add minute counter
 //  do a test
-//  use the stdio
+//  add verbose option
 
 pub fn main() !void {
-    if (std.os.argv.len < 2) {
-        std.debug.print("no argument provided for {s}.\nusage:\n...\n", .{std.os.argv[0]});
+    if (std.os.argv.len <= 1) {
+        try std.io.getStdOut().writer().print("no argument provided.\nusage:\n{s} command...\n", .{std.os.argv[0]});
         return;
     }
     const fork_pid = try std.posix.fork();
@@ -18,14 +16,11 @@ pub fn main() !void {
         const result = std.posix.execvpeZ(argv[0], @ptrCast(argv), @ptrCast(envp));
         std.debug.print("ERROR: {}\n", .{result});
     } else {
-        const wait = std.posix.waitpid(fork_pid, 0);
-        if (wait.status != 0) {
-            std.debug.print("child: {}\n", .{wait});
-        }
-        const timerSec = @divFloor(std.time.Timer.read(&timer), std.time.ns_per_s);
-        const timerMs = @divFloor(std.time.Timer.read(&timer), std.time.ns_per_ms) - (timerSec * std.time.ms_per_s);
+        _ = std.posix.waitpid(fork_pid, 0);
+        const timerSec = std.time.Timer.read(&timer) / std.time.ns_per_s;
+        const timerMs = (std.time.Timer.read(&timer) / std.time.ns_per_ms) % std.time.ms_per_s;
         const rusage = std.posix.getrusage(std.posix.rusage.CHILDREN);
 
-        std.debug.print("======================\nReal\t{}.{:0>3}s\nUser\t{}.{:0>3}s\nSys\t{}.{:0>3}s\n", .{ timerSec, timerMs, rusage.utime.sec, @divFloor(@as(usize, @bitCast(rusage.utime.usec)), std.time.us_per_ms), rusage.stime.sec, @divFloor(@as(usize, @bitCast(rusage.stime.usec)), std.time.us_per_ms) });
+        try std.io.getStdOut().writer().print("\nReal\t{}m{}.{:0>3}s\nUser\t{}m{}.{:0>3}s\nSys\t{}m{}.{:0>3}s\n", .{ @divFloor(timerSec, 60), timerSec % 60, timerMs, @divFloor(rusage.utime.sec, 60), @mod(rusage.utime.sec, 60), @divFloor(@as(usize, @bitCast(rusage.utime.usec)), std.time.us_per_ms), @divFloor(rusage.utime.sec, 60), @mod(rusage.stime.sec, 60), @divFloor(@as(usize, @bitCast(rusage.stime.usec)), std.time.us_per_ms) });
     }
 }
