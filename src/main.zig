@@ -1,6 +1,8 @@
 const std = @import("std");
 //TODO:
 //  do a test
+//KNOWN BUGS:
+//  when -p is triggered then it will show timing output
 
 pub fn main() !void {
     const usage = "\x1B[1mUSAGE: ./time command...\x1B[0m\nOPTIONS:\n\t-h\t Displays this usage message.\n\t-p\t Write the timing output to standard error.\n\n";
